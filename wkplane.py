@@ -384,6 +384,10 @@ def fmt_rate(value):
     return fmt_bytes(value) + "/s"
 
 
+def fmt_mbps(value):
+    return f"{value * 8 / 1000 / 1000:.2f} Mbps"
+
+
 def metrics():
     mem = {}
     with open("/proc/meminfo", "r", encoding="utf-8") as f:
@@ -407,13 +411,18 @@ def metrics():
         states[state] = states.get(state, 0) + 1
     uptime = int(float(open("/proc/uptime", "r", encoding="utf-8").read().split()[0]))
     now = time.time()
-    if BANDWIDTH_STATE["time"] > 0:
-        elapsed = max(now - BANDWIDTH_STATE["time"], 0.001)
-        BANDWIDTH_STATE["rx_rate"] = max(rx - BANDWIDTH_STATE["rx"], 0) / elapsed
-        BANDWIDTH_STATE["tx_rate"] = max(tx - BANDWIDTH_STATE["tx"], 0) / elapsed
-    BANDWIDTH_STATE["time"] = now
-    BANDWIDTH_STATE["rx"] = rx
-    BANDWIDTH_STATE["tx"] = tx
+    if BANDWIDTH_STATE["time"] <= 0:
+        BANDWIDTH_STATE["time"] = now
+        BANDWIDTH_STATE["rx"] = rx
+        BANDWIDTH_STATE["tx"] = tx
+    else:
+        elapsed = now - BANDWIDTH_STATE["time"]
+        if elapsed >= 1.5:
+            BANDWIDTH_STATE["rx_rate"] = max(rx - BANDWIDTH_STATE["rx"], 0) / elapsed
+            BANDWIDTH_STATE["tx_rate"] = max(tx - BANDWIDTH_STATE["tx"], 0) / elapsed
+            BANDWIDTH_STATE["time"] = now
+            BANDWIDTH_STATE["rx"] = rx
+            BANDWIDTH_STATE["tx"] = tx
     return {
         "load": os.getloadavg(),
         "mem_used": mem.get("MemTotal", 0) - mem.get("MemAvailable", 0),
@@ -446,6 +455,9 @@ def status_payload():
         "rx_rate": fmt_rate(m["rx_rate"]),
         "tx_rate": fmt_rate(m["tx_rate"]),
         "total_rate": fmt_rate(m["rx_rate"] + m["tx_rate"]),
+        "rx_mbps": fmt_mbps(m["rx_rate"]),
+        "tx_mbps": fmt_mbps(m["tx_rate"]),
+        "total_mbps": fmt_mbps(m["rx_rate"] + m["tx_rate"]),
         "rx_total": "累计 " + fmt_bytes(m["rx"]),
         "tx_total": "累计 " + fmt_bytes(m["tx"]),
         "conn_states": states,
@@ -590,7 +602,7 @@ class Handler(BaseHTTPRequestHandler):
         rows = "".join(row_parts)
         body = (f'<div class="msg" style="display:{"block" if msg else "none"}">{msg}</div>'
                 f"""<section id="overview">
-<div class="card hero"><div class="muted">服务器实时带宽</div><div class="value" id="total_rate">{html.escape(s['total_rate'])}</div><div class="small">上行 + 下行，每 2 秒自动刷新</div></div>
+<div class="card hero"><div class="muted">服务器实时带宽</div><div class="value" id="total_rate">{html.escape(s['total_rate'])}</div><div class="small">约 <span id="total_mbps">{html.escape(s['total_mbps'])}</span>，上行 + 下行，每 2 秒自动刷新</div></div>
 <div class="node">
   <div class="node-head"><div><div class="small"># 当前服务器</div><h2 style="margin:8px 0 0">转发节点 <span class="muted" style="font-size:16px">在线</span></h2></div><span class="badge">● 在线</span></div>
   <div class="stats3">
@@ -599,8 +611,8 @@ class Handler(BaseHTTPRequestHandler):
     <div class="tile"><div class="small">运行时间</div><div class="value" id="uptime">{html.escape(s['uptime'])}</div></div>
   </div>
   <div class="band">
-    <div class="tile"><div><strong>↑ 实时上行</strong><div class="small" id="tx_total">{html.escape(s['tx_total'])}</div></div><div class="value" id="tx_rate">{html.escape(s['tx_rate'])}</div></div>
-    <div class="tile"><div><strong>↓ 实时下行</strong><div class="small" id="rx_total">{html.escape(s['rx_total'])}</div></div><div class="value" id="rx_rate">{html.escape(s['rx_rate'])}</div></div>
+    <div class="tile"><div><strong>↑ 实时上行</strong><div class="small" id="tx_total">{html.escape(s['tx_total'])}</div><div class="small" id="tx_mbps">{html.escape(s['tx_mbps'])}</div></div><div class="value" id="tx_rate">{html.escape(s['tx_rate'])}</div></div>
+    <div class="tile"><div><strong>↓ 实时下行</strong><div class="small" id="rx_total">{html.escape(s['rx_total'])}</div><div class="small" id="rx_mbps">{html.escape(s['rx_mbps'])}</div></div><div class="value" id="rx_rate">{html.escape(s['rx_rate'])}</div></div>
   </div>
   <div class="tile"><div style="display:flex;justify-content:space-between"><span>负载</span><strong id="load">{html.escape(s['load'])}</strong></div><div class="progress"><span style="width:35%"></span></div>
   <div style="display:flex;justify-content:space-between"><span>内存</span><strong id="memory">{html.escape(s['memory'])}</strong></div><div class="progress"><span style="width:19%"></span></div>
@@ -620,7 +632,7 @@ async function refreshStatus() {{
     const res = await fetch("{base}/api/status", {{cache: "no-store"}});
     if (!res.ok) return;
     const s = await res.json();
-    for (const id of ["load", "memory", "disk", "traffic", "conn_states_html", "uptime", "updated_at", "rx_rate", "tx_rate", "total_rate", "rx_total", "tx_total", "conn_total"]) {{
+    for (const id of ["load", "memory", "disk", "traffic", "conn_states_html", "uptime", "updated_at", "rx_rate", "tx_rate", "total_rate", "rx_mbps", "tx_mbps", "total_mbps", "rx_total", "tx_total", "conn_total"]) {{
       const el = document.getElementById(id);
       if (el && s[id] !== undefined) el.innerHTML = s[id];
     }}
