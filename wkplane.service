@@ -1,0 +1,15 @@
+[Unit]
+Description=WkPlane Port Forwarding Panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/wkplane/wkplane.py
+Restart=on-failure
+RestartSec=3
+User=root
+WorkingDirectory=/opt/wkplane
+
+[Install]
+WantedBy=multi-user.target
