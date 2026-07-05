@@ -602,7 +602,7 @@ class Handler(BaseHTTPRequestHandler):
         rows = "".join(row_parts)
         body = (f'<div class="msg" style="display:{"block" if msg else "none"}">{msg}</div>'
                 f"""<section id="overview">
-<div class="card hero"><div class="muted">服务器实时带宽</div><div class="value" id="total_rate">{html.escape(s['total_rate'])}</div><div class="small">约 <span id="total_mbps">{html.escape(s['total_mbps'])}</span>，上行 + 下行，每 2 秒自动刷新</div></div>
+<div class="card hero"><div class="muted">服务器实时带宽</div><div class="value" id="total_mbps">{html.escape(s['total_mbps'])}</div><div class="small"><span id="total_rate">{html.escape(s['total_rate'])}</span>，上行 + 下行，每 2 秒自动刷新</div></div>
 <div class="node">
   <div class="node-head"><div><div class="small"># 当前服务器</div><h2 style="margin:8px 0 0">转发节点 <span class="muted" style="font-size:16px">在线</span></h2></div><span class="badge">● 在线</span></div>
   <div class="stats3">
@@ -611,8 +611,8 @@ class Handler(BaseHTTPRequestHandler):
     <div class="tile"><div class="small">运行时间</div><div class="value" id="uptime">{html.escape(s['uptime'])}</div></div>
   </div>
   <div class="band">
-    <div class="tile"><div><strong>↑ 实时上行</strong><div class="small" id="tx_total">{html.escape(s['tx_total'])}</div><div class="small" id="tx_mbps">{html.escape(s['tx_mbps'])}</div></div><div class="value" id="tx_rate">{html.escape(s['tx_rate'])}</div></div>
-    <div class="tile"><div><strong>↓ 实时下行</strong><div class="small" id="rx_total">{html.escape(s['rx_total'])}</div><div class="small" id="rx_mbps">{html.escape(s['rx_mbps'])}</div></div><div class="value" id="rx_rate">{html.escape(s['rx_rate'])}</div></div>
+    <div class="tile"><div><strong>↑ 实时上行</strong><div class="small" id="tx_total">{html.escape(s['tx_total'])}</div><div class="small" id="tx_rate">{html.escape(s['tx_rate'])}</div></div><div class="value" id="tx_mbps">{html.escape(s['tx_mbps'])}</div></div>
+    <div class="tile"><div><strong>↓ 实时下行</strong><div class="small" id="rx_total">{html.escape(s['rx_total'])}</div><div class="small" id="rx_rate">{html.escape(s['rx_rate'])}</div></div><div class="value" id="rx_mbps">{html.escape(s['rx_mbps'])}</div></div>
   </div>
   <div class="tile"><div style="display:flex;justify-content:space-between"><span>负载</span><strong id="load">{html.escape(s['load'])}</strong></div><div class="progress"><span style="width:35%"></span></div>
   <div style="display:flex;justify-content:space-between"><span>内存</span><strong id="memory">{html.escape(s['memory'])}</strong></div><div class="progress"><span style="width:19%"></span></div>
